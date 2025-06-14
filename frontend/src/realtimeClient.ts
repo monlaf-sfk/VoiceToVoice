@@ -35,6 +35,16 @@ export class RealtimeClient {
     this.#options = options;
   }
 
+  #handleRawEvent(event: any): void {
+    this.#events.emit('raw_event', event);
+  }
+
+  #handleConnectionChange(status: 'connected' | 'connecting' | 'disconnected'): void {
+    if (status === 'disconnected') {
+      this.#events.emit('connection_change', 'disconnected');
+    }
+  }
+
   on<K extends keyof ClientEvents>(event: K, listener: (...args: ClientEvents[K]) => void) {
     this.#events.on(event, listener as any);
   }
@@ -46,12 +56,19 @@ export class RealtimeClient {
       ? new OpenAIRealtimeWebRTC({ useInsecureApiKey: true, audioElement: this.#options.audioElement })
       : 'webrtc';
     this.#session = new RealtimeSession(this.#options.agent, { transport: transportValue });
+
     this.#events.emit('connection_change', 'connecting');
+
     const transport: any = this.#session.transport;
-    transport.on('*', (event: any) => this.#events.emit('raw_event', event));
-    transport.on('connection_change', (status: any) => {
-      if (status === 'disconnected') this.#events.emit('connection_change', 'disconnected');
-    });
+
+    // --- ИЗМЕНЕННЫЙ КОД ---
+    // Вместо .bind(this), передаем `this` как третий аргумент.
+    // Это более надежный способ для работы с некоторыми системами событий,
+    // которые ожидают получить контекст отдельно.
+    transport.on('*', this.#handleRawEvent, this);
+    transport.on('connection_change', this.#handleConnectionChange, this);
+    // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+
     await this.#session.connect({ apiKey: ek });
     this.#events.emit('connection_change', 'connected');
   }

@@ -30,7 +30,6 @@ services:
     environment:
       # Передаем переменные из корневого .env файла.
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - CORS_ORIGINS=${CORS_ORIGINS}
     networks:
       - dev
     restart: always
