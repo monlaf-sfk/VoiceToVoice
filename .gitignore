@@ -118,3 +118,4 @@ venv
 # Other
 .env
 .env.*
+.cursor

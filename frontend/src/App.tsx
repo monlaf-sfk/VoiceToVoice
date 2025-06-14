@@ -7,7 +7,7 @@ type TranscriptItem = { id: string; role: 'user' | 'assistant'; text: string; };
 type SessionStatus = 'disconnected' | 'connecting' | 'connected';
 
 // URL бэкенда из переменных окружения
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Простой агент, с которым мы будем общаться
 const chatAgent = new RealtimeAgent({

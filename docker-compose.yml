@@ -1,18 +1,55 @@
+version: '3.8'
+
 services:
+  # Главный Reverse Proxy. Единственная точка входа.
+  nginx:
+    image: nginx:stable-alpine
+    container_name: main_nginx_proxy
+    ports:
+      # Только этот сервис "смотрит" наружу.
+      # Он слушает порт APP_PORT на вашем компьютере и перенаправляет на порт 80 внутри себя.
+      - "${APP_PORT:-80}:80"
+    volumes:
+      # Монтируем нашу конфигурацию Nginx.
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - dev
+    restart: always
+
+  # Бэкенд сервис. Доступен только изнутри Docker-сети.
   backend:
     build: ./backend
-    ports:
-      - "8000:8000"
-    restart: unless-stopped
-    env_file:
-      - .env
+    container_name: backend_service
+    # 'expose' просто документирует, что контейнер слушает порт 8000 внутри.
+    # Он не выставляет порт наружу.
+    expose:
+      - "8000"
+    environment:
+      # Передаем переменные из корневого .env файла.
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+    networks:
+      - dev
+    restart: always
 
+  # Фронтенд сервис. Доступен только изнутри Docker-сети.
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "5173:80"
-    depends_on:
-      - backend
-    restart: unless-stopped 
+      # Передаем аргумент сборки из корневого .env файла.
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    container_name: frontend_service
+    expose:
+      - "80"
+    networks:
+      - dev
+    restart: always
+
+# Определяем общую сеть для всех сервисов.
+networks:
+  dev:
+    driver: bridge

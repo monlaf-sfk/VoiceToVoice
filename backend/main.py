@@ -12,7 +12,7 @@ app = FastAPI()
 origins = [
     "http://localhost:5173",
     "http://localhost:3000",
-    "12"
+    os.getenv("FRONTEND_URL", "http://localhost:5173"),
 ]
 
 app.add_middleware(
@@ -59,40 +59,3 @@ async def create_session():
 
 
 
-# class OpenAIRequestBody(BaseModel):
-#     model: str | None = None
-#     input: List[Dict[str, Any]] | None = None
-#     text: Dict[str, Any] | None = None
-#     extra_data: Dict[str, Any] = Field(default_factory=dict, alias='extra_data')
-#
-#     class Config:
-#         extra = 'allow'
-
-
-# @app.post("/api/responses")
-# async def proxy_openai_responses(request: Request):
-#     """
-#     Проксирует запросы к OpenAI Responses API (parse или create).
-#     """
-#     body = await request.json()
-#
-#     # Определяем, какой метод вызывать: parse или create
-#     is_structured = body.get("text", {}).get("format", {}).get("type") == 'json_schema'
-#
-#     try:
-#         if is_structured:
-#             # openai.responses.parse не является async, но мы можем запустить его в потоке,
-#             # чтобы не блокировать event loop. Но для простоты пока оставим так.
-#             # В SDK openai > 1.0 эти методы стали синхронными
-#             response = openai_client.beta.responses.parse(**body)
-#         else:
-#             response = openai_client.beta.responses.create(**body)
-#
-#         # Pydantic v2+ модели нужно конвертировать в dict для JSON-ответа
-#         return response.model_dump()
-#
-#     except Exception as e:
-#         print(f"Ошибка в прокси для OpenAI Responses: {e}")
-#         raise HTTPException(status_code=500, detail={"error": "failed"})
-#
-# # Команда для запуска сервера: uvicorn main:app --reload --port 8000
